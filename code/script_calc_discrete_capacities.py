@@ -2,16 +2,14 @@ from __future__ import division
 from pylab import *
 from scipy import optimize
 
-from myCodeCopy import JessePlot, blahut, CapacityTools, helpers
-dict2global = helpers.dict2global
-Q = CapacityTools.Q
+import JessePlot, blahut, helpers
 
 #==============================================================================
 #%% Load and preformat the data
 #==============================================================================
-data = load('./../data/FD12W_2_PS_4.npz')
-dict2global(data)
-Pyx, x, y = Q(V, R, nx=2000, ny=2000)
+data = load('./../data/IEDM2014_PCM_Partial_Reset.npz')
+helpers.dict2global(data)
+Pyx, x, y = blahut.Q(V, R, nx=2000, ny=2000)
 
 #==============================================================================
 # %% Discrete inputs

@@ -5,7 +5,7 @@ import numpy as np
 import sys
 
 
-def loop(func, iters, kwargs, outs, savefile=None):
+def loop(func, iters, outs, savefile=None, kwargs={}):
     '''
     A function to iterate over the dictionary 'iter_dict' and run 'function' with
     'kwargs', saving and returning 'outs' into 'savefile'
@@ -40,17 +40,33 @@ def loop(func, iters, kwargs, outs, savefile=None):
     >>>     b = x*y*z
     >>>     return a, b
     >>> 
+    >>> func = lambda x, y: test(x, y, z=1)  # kwargs = {}
     >>> func = test
     >>> iters = [('x', range(3)), ('y', range(5))]
     >>> kwargs = dict(z=1)
     >>> outs = ['a', 'b']
     >>> 
-    >>> res = loop(func, iters, kwargs, outs)
+    >>> res = loop(func, iters, outs, 'test.npz', kwargs)
     >>> res['b']
     >>> array([[0, 0, 0, 0, 0],
     >>>    [0, 1, 2, 3, 4],
     >>>    [0, 2, 4, 6, 8]])
+
+    Ex. 2
+    -----
+    >>> def test(x, y, z):
+    >>>     a = x + y + z
+    >>>     b = x*y*z
+    >>>     return a, b
+    >>> 
+    >>> func = lambda x, y: test(x, y, z=1)
+    >>> iters = [('x', range(3)), ('y', range(5))]
+    >>> outs = ['a', 'b']
+    >>> 
+    >>> res = loop(func, iters, outs)
+    >>> helpers.dict2global(res)
     '''
+    
     #Make sure iters is a list of tuples
     if len(iters[0]) < 2:
         iters = [iters]
@@ -79,6 +95,7 @@ def loop(func, iters, kwargs, outs, savefile=None):
             if out:
                 out_dict[out].append(res)        
 
+
        
     #Turn Everything Into an Array
     for k, v in out_dict.items():
@@ -94,11 +111,12 @@ def loop(func, iters, kwargs, outs, savefile=None):
         out_dict[k] = temp.reshape(new_shape)
 
 
-    #Add iters (preserves order), kwargs, and func
-    out_dict['iters'] = iters
-    out_dict['iters_dict'] = dict(iters)
-    out_dict['func'] = func
-    out_dict = dict(out_dict.items() + kwargs.items())
+
+    #Add iters (preserves order) and kwargs
+    iters_dict = dict(iters)
+    iters_dict['order'] = iter_keys
+    out_dict['iters_dict'] = np.array([iters_dict])
+    out_dict['kwargs_dict'] = np.array([kwargs])
     
                 
     #Save!
@@ -106,16 +124,6 @@ def loop(func, iters, kwargs, outs, savefile=None):
         np.savez(savefile, **out_dict)
         
     return out_dict
-
-
-
-
-
-
-def search():
-    pass
-
-
 
 
 
@@ -143,7 +151,6 @@ def dict2global(*dicts, **kwargs):
     #Create Global Injector
     Global = _global_injector()
 
-        
     for dict_ in dicts:
 
         for k, v in dict_.items():
