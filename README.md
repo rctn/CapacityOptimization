@@ -3,7 +3,7 @@ This is a public repository for code related to the IEDM 2014 conference paper[1
 
 	ipython notebook IEDM2014.ipynb
 
-Notebook is also viewable [here](http://nbviewer.ipython.org/github/rctn/CapacityOptimization/blob/master/code/IEDM2014.ipynb).
+Notebook is also viewable [here](http://nbviewer.ipython.org/github/rctn/CapacityOptimization/blob/master/IEDM2014.ipynb).
 
 
 [1]: *Engel et al., "Capacity Optimization of Emerging Memory Systems: A Shannon-Inspired Approach to Device Characterization", IEDM, 2014.*.
