@@ -113,6 +113,28 @@ def rc(style='ppt_1', close=True):
         p['axes.labelsize'] = 12
         p['figure.figsize'] = (29/6, 2) #w,h 
 
+    elif style == 'ipynb':
+        plt.rcdefaults()
+        p['lines.linewidth'] = 1.5
+        p['axes.linewidth'] = 1.5
+        p['xtick.minor.width'] = 1
+        p['ytick.minor.width'] = 1
+        p['xtick.major.width'] = 1.5
+        p['ytick.major.width'] = 1.5
+        p['xtick.minor.size'] = 2
+        p['ytick.minor.size'] = 2
+        p['xtick.major.size'] = 5
+        p['ytick.major.size'] = 5
+        # p['figure.dpi'] = 300 
+        # p['savefig.dpi'] = 900 
+        p['font.family'] = 'sans-serif'
+        p['font.sans-serif'] = ['Arial']
+        p['font.weight'] = 'bold'
+        p['axes.labelweight'] = 'bold'
+        p['font.size'] = 14
+        p['legend.fontsize']= 14
+        p['axes.labelsize'] = 16
+        p['figure.figsize'] = (58/12, 4) #w,h 
 
     else:
         print 'Wrong style: [ppt_1, ppt_2, ppt_4, ppt_6, word_3]'
