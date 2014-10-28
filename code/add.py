@@ -69,7 +69,6 @@ iters = [('x', range(3)), ('y', range(5))]
 outs = ['a', 'b']
  
 res = helpers.loop(func, iters, outs, savefile='test.npz')
-helpers.dict2global(res)
 
 #%%
 r = {'a':11, 'b':12}

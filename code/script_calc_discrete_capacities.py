@@ -8,230 +8,87 @@ import JessePlot, blahut, helpers
 #%% Load and preformat the data
 #==============================================================================
 data = load('./../data/IEDM2014_PCM_Partial_Reset.npz')
-helpers.dict2global(data)
+V = data['V']
+R = log10(data['R'])
 Pyx, x, y = blahut.Q(V, R, nx=2000, ny=2000)
 
 #==============================================================================
 # %% Discrete inputs
 #==============================================================================
-reload(blahut)
 
-new_run = False # Erases old file Only 1st Time
-new_x0 = True
+filename = './../npz/IEDM/optimal_discrete_inputs.npz'
 
-totsize = 100
-nx = 30
 x_range = (min(x),max(x))
+nbits = arange(1, 9)
 
-
-C_in_temp = [0 for i in range(totsize)]
-x_in_temp = [0 for i in range(totsize)]
-Px_in_temp = [0 for i in range(totsize)]
-
-
-for repeat in arange(100):
-    for ix in arange(5, 13):
-    #    if new_x0 or new_run:
-    #        xinputs = rand(ix) * abs(x_range[1]-x_range[0]) + x_range[0]
-    #        xinputs.sort()
-    #        x0 = xinputs
-    #    else:
-    #        x0 = x_in[ix]
-        x0 = np.random.choice(x0_max, ix, replace=False)
-    
-            
-        bounds = [x_range for i in arange(ix)]
-        params = (Pyx, x, y, ix)
-        
-         
-        minimizer_kwargs = dict(method='L-BFGS-B',
-                                args=params,
-                                bounds=bounds)
-            
-        
-        def objective(val, Pyx=Pyx, x=x, y=y, ix=ix):
-            xinputs = val
-            Pyx_sub, x_sub, y_sub = blahut.quantize(Pyx, x, y, xinputs, ydividers=None)
-            C, Px = blahut.blahut_arimoto(Pyx_sub, 
-                                          tolerance=1e-4, 
-                                          iterations = 100)
-                                    
-            if C > C_in_temp[ix]:        
-                C_in_temp[ix] = C
-                x_in_temp[ix] = xinputs
-                Px_in_temp[ix] = Px
-                data = dict(C_in_temp=C_in_temp, x_in_temp=x_in_temp, Px_in_temp=Px_in_temp)
-                savez('./../npz/basinhopping_xin_temp.npz', data=data)    
-    
-    
-            print '\nC:', C
-            print 'xin:', xinputs
-            print 'nx:', ix
-            return -C
-        
-        
-        
-    
-        result = optimize.basinhopping(objective, 
-                                       x0=x0, 
-                                       minimizer_kwargs=minimizer_kwargs,
-                                       niter=500,
-                                       stepsize=0.5,
-                                       T=0.5)
-    
-        
-        print result
-
-
-#==============================================================================
-# %% Combine temp XIN
-#==============================================================================
-
-r = load('./../npz/basinhopping_xin_temp.npz')['data'].item()
-C_opt, x_in_opt, Px_opt = (r['C_in_temp'], 
-                     r['x_in_temp'], 
-                     r['Px_in_temp'])
-
-r = load('./../npz/basinhopping.npz')['data'].item()
-C_out, y_div, Px_out, C_in, x_in, Px_in = (r['C_out'], 
-                                           r['y_div'], 
-                                           r['Px_out'],
-                                           r['C_in'], 
-                                           r['x_in'], 
-                                           r['Px_in'])
-                     
-#%%                     
-                     
-for i in arange(len(C_out)):                   
-    if C_opt[i] > C_in[i]:
-        C_in[i] = C_opt[i]
-        x_in[i] = x_in_opt[i]
-        Px_in[i] = Px_opt[i]
-
-#%%
-
-data = dict(C_out=C_out, C_in=C_in, x_in=x_in, y_div=y_div, Px_in=Px_in, Px_out=Px_out)
-savez('./../npz/basinhopping.npz', data=data)    
+#Initialize the File
+try:
+    data = load(filename)
+except IOError:
+    totsize = nbits.size
+    for var in ['C_in', 'C_out']:
+        locals()[var] = zeros(totsize)
+    for var in ['x_in', 'y_div', 'Px_in', 'Px_out']:
+        locals()[var] = [[0 for j in range(i)] for i in range(totsize)]
+    data = dict(C_in=C_in, x_in=x_in, Px_in=Px_in, nbits=nbits)
+    savez(filename, **data)    
 
 
 
-#==============================================================================
-# %% Discrete outputs
-#==============================================================================
-#
-reload(blahut)
-new_run = True # Erases old file Only 1st Time
 new_x0 = True
 
-totsize = 100
-ny = 30
-y_range = (min(y),max(y))
 
-C_out_temp = [0 for i in range(totsize)]
-y_div_temp = [0 for i in range(totsize)]
-Px_out_temp = [0 for i in range(totsize)]
+#Search
+for repeat in arange(100):
+    idx = np.random.choice(nbits) - 1
+    states = 2**(idx + 1)
 
-for niteration in arange(1000):
-    for iy in [31, 63]:#arange(2, ny+1):
-        if new_x0 or new_run:
-            ydividers = rand(iy) * abs(y_range[1]-y_range[0]) + y_range[0]
-            ydividers.sort()
-            x0 = ydividers
-        else:
-            x0 = y_div[iy]
-    
-            
-        bounds = [y_range for i in arange(iy)]
-        params = (Pyx, x, y, iy)
-        
-         
-        minimizer_kwargs = dict(method='L-BFGS-B',
-                                args=params,
-                                bounds=bounds)
+    if new_x0 or new_run:
+        x0 = rand(states) * abs(x_range[1]-x_range[0]) + x_range[0]
+        x0.sort()
+    else:
+        x0 = data['x_in'][idx]
     
         
-        def objective(val, Pyx=Pyx, x=x, y=y, iy=iy):
-            global C_out_temp, y_div_temp, Px_out_temp
+    bounds = [x_range for i in arange(states)]
+    params = (Pyx, x, y, idx)
     
-            ydividers = array(val)
-            ydividers.sort()
-            Pyx_sub, x_sub, y_sub = blahut.quantize(Pyx, x, y, xinputs=None, ydividers=ydividers)
-            C, Px = blahut.blahut_arimoto(Pyx_sub, 
-                                          tolerance=1e-4, 
-                                          iterations = 100)
-                                    
-            print '\nC:', C
-            print 'ydividers:', ydividers
-            print 'ny:', iy
-            
-            if C > C_out_temp[iy]:        
-                C_out_temp[iy] = C
-                y_div_temp[iy] = ydividers
-                Px_out_temp[iy] = Px
-                data = dict(C_out_temp=C_out_temp, y_div_temp=y_div_temp, Px_out_temp=Px_out_temp)
-                savez('./../npz/basinhopping_yout_temp.npz', data=data)    
-            
-            return -C
-        
-        
-        def accept_test(f_new, x_new, f_old, x_old):
-            '''
-            Make it so there aren't two dividers with the same value
-            '''
-            if len(x_new) == len(set(x_new)):
-                return True
-            else:
-                return False
+     
+    minimizer_kwargs = dict(method='L-BFGS-B',
+                            args=params,
+                            bounds=bounds)
         
     
-        result = optimize.basinhopping(objective, 
-                                       x0=x0, 
-                                       minimizer_kwargs=minimizer_kwargs,
-                                       niter=500,
-                                       stepsize=2.0,
-                                       T=0.5,
-                                       accept_test=accept_test)
+    def objective(val, Pyx=Pyx, x=x, y=y, idx=idx):
+        xinputs = val
+        xinputs.sort()
         
-        
-        
-        print result
+        Pyx_sub, x_sub, y_sub = blahut.quantize(Pyx, x, y, xinputs, ydividers=None)
+        C, Px = blahut.blahut_arimoto(Pyx_sub, 
+                                      tolerance=1e-4, 
+                                      iterations = 100)
+                                
+        result = {'C_in':C, 'Px_in':Px, 'x_in':xinputs}
+        helpers.add_to_database( result=result, index=idx, 
+                                 goal=('C_in', 'max'), filename=filename )
+
+        print '\nC:', C
+        print 'x_in:', xinputs
+        print 'idx:', idx
+
+        return -C
+    
+
+    result = optimize.basinhopping(objective, 
+                                   x0=x0, 
+                                   minimizer_kwargs=minimizer_kwargs,
+                                   niter=100,
+                                   stepsize=0.5,
+                                   T=0.5)
+    
+    print result
 
 
-   
-
-#==============================================================================
-# %% Combine temp YOUT
-#==============================================================================
-
-r = load('./../npz/basinhopping_yout_temp.npz')['data'].item()
-C_opt, y_div_opt, Px_opt = (r['C_out_temp'], 
-                     r['y_div_temp'], 
-                     r['Px_out_temp'])
-
-r = load('./../npz/basinhopping.npz')['data'].item()
-C_out, y_div, Px_out, C_in, x_in, Px_in = (r['C_out'], 
-                                           r['y_div'], 
-                                           r['Px_out'],
-                                           r['C_in'], 
-                                           r['x_in'], 
-                                           r['Px_in'])
-                
-#%%
-close('all'); plot(C_opt); plot(C_out); show()               
-                
-#%%                     
-                     
-for i in arange(len(C_out)):                   
-    print C_out[i], C_opt[i]
-    if C_opt[i] > C_out[i]:
-        C_out[i] = C_opt[i]
-        y_div[i] = y_div_opt[i]
-        Px_out[i] = Px_opt[i]
-
-#%%
-
-data = dict(C_out=C_out, C_in=C_in, x_in=x_in, y_div=y_div, Px_in=Px_in, Px_out=Px_out)
-savez('./../npz/basinhopping.npz', data=data)    
 
 
 
