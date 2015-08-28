@@ -1,4 +1,4 @@
-# CapacityOptimizatio
+# CapacityOptimization
 This is a public repository for code related to the IEDM 2014 conference paper[1]. All figures are generated from IEDM2014.ipynb. To get started, open a shell and run:
 
 	ipython notebook IEDM2014.ipynb
